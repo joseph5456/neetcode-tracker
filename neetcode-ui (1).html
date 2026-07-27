@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NeetCode 150 // Recall Tracker</title>
+<style>
+  :root{
+    --bg: #0d1117;
+    --panel: #12181f;
+    --panel-2: #161d26;
+    --border: #232b36;
+    --text: #d7dee5;
+    --text-dim: #7c8a99;
+    --accent: #5fd68a;
+    --accent-dim: #2c5c42;
+    --warn: #e8b04b;
+    --danger: #e0625a;
+    --mono: 'SF Mono','JetBrains Mono',Consolas,Monaco,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;line-height:1.5;min-height:100vh;}
+  .wrap{max-width:900px;margin:0 auto;padding:26px 20px 60px;}
+  h1{font-size:16px;margin:0;color:var(--text);}
+  h1 .prompt{color:var(--accent);}
+  .subtitle{color:var(--text-dim);font-size:12px;margin:2px 0 20px;}
+
+  #authBox{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px;margin-bottom:22px;}
+  #authBox.hidden{display:none;}
+  .auth-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  input{font-family:var(--mono);font-size:13px;padding:9px 10px;border-radius:5px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);}
+  input:focus{outline:none;border-color:var(--accent-dim);}
+  button{font-family:var(--mono);font-size:12px;padding:9px 14px;border-radius:5px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;}
+  button:hover{border-color:var(--accent-dim);color:var(--accent);}
+  button.primary{border-color:var(--accent-dim);color:var(--accent);}
+  #authMsg{font-size:12px;color:var(--warn);margin-top:8px;min-height:16px;}
+
+  #appBox.hidden{display:none;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .who{color:var(--text-dim);font-size:12px;}
+  .who b{color:var(--accent);}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px;}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:12px 14px;}
+  .stat .n{font-size:22px;color:var(--accent);font-weight:600;}
+  .stat.warn .n{color:var(--warn);}
+  .stat .l{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.6px;margin-top:2px;}
+
+  .tabs{display:flex;gap:2px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+  .tab{padding:9px 16px;font-size:12px;color:var(--text-dim);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;letter-spacing:0.3px;border-radius:0;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+  .queue-item{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:10px;}
+  .queue-item.overdue{border-left:3px solid var(--danger);}
+  .queue-item.duenow{border-left:3px solid var(--warn);}
+  .qi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  .qi-name{font-size:14px;font-weight:600;}
+  .qi-cat{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .qi-due{font-size:11px;color:var(--text-dim);white-space:nowrap;}
+  .qi-due.overdue-txt{color:var(--danger);}
+  .qi-note{font-size:12px;color:var(--text-dim);margin:8px 0;padding:8px 10px;background:var(--panel-2);border-radius:4px;display:none;}
+  .qi-note.shown{display:block;}
+  .qi-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  button.rate{font-size:11px;padding:7px 12px;}
+  button.rate.again{color:var(--danger);}
+  button.rate.hard{color:var(--warn);}
+  button.rate.good{color:var(--accent);}
+  button.rate.easy{color:#6db8ff;}
+  .toggle-note{background:none;border:none;color:var(--text-dim);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;}
+
+  .empty{color:var(--text-dim);text-align:center;padding:50px 10px;font-size:13px;}
+  .empty .big{color:var(--accent);font-size:28px;display:block;margin-bottom:10px;}
+
+  .cat-block{margin-bottom:22px;}
+  .cat-head{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;display:flex;justify-content:space-between;}
+  .prob-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--panel);border:1px solid var(--border);border-radius:5px;margin-bottom:6px;}
+  .prob-name{flex:1;font-size:13px;}
+  .badge{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap;}
+  .badge.review{color:var(--accent);border-color:var(--accent-dim);}
+  .btn-small{font-size:11px;padding:5px 10px;}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:50;}
+  .modal-bg.open{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:22px;width:400px;max-width:90vw;}
+  .modal h3{margin:0 0 12px;font-size:14px;color:var(--accent);}
+  .modal textarea{width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:12px;padding:10px;min-height:80px;resize:vertical;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+
+  .loading{color:var(--text-dim);text-align:center;padding:40px;font-size:12px;}
+  .server-input{font-size:11px;color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="prompt">&gt;</span> neetcode150 --recall-tracker</h1>
+    <div class="subtitle">Pattern recall scheduled with FSRS. Solve first, review the pattern later — not the code.</div>
+  </header>
+
+  <div id="authBox">
+    <div class="auth-row">
+      <input id="apiUrl" class="server-input" value="http://localhost:8080/api" size="28" title="API base URL">
+      <input id="username" placeholder="username">
+      <input id="password" placeholder="password" type="password">
+      <button class="primary" onclick="login()">Log in</button>
+      <button onclick="register()">Register</button>
+    </div>
+    <div id="authMsg"></div>
+  </div>
+
+  <div id="appBox" class="hidden">
+    <div class="topbar">
+      <div class="who">logged in as <b id="whoName"></b></div>
+      <button class="btn-small" onclick="logout()">log out</button>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="due" id="tab-due">due today</button>
+      <button class="tab" data-tab="all" id="tab-all">all problems</button>
+    </div>
+
+    <div id="content"><div class="loading">loading...</div></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="noteModal">
+  <div class="modal">
+    <h3 id="modalTitle">pattern note</h3>
+    <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;">
+      What's the approach? (this is your review prompt — keep it short)
+    </label>
+    <textarea id="noteInput" placeholder="e.g. hashmap, store complement while iterating, O(n)"></textarea>
+    <div class="modal-actions">
+      <button id="noteCancel">cancel</button>
+      <button class="primary" id="noteSave">save & mark solved</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let API = document.getElementById('apiUrl').value;
+let token = null;
+let problemsCache = [];
+let activeTab = 'due';
+let pendingProblemId = null;
+
+function authHeader(){ return token ? {"Authorization":"Bearer "+token} : {}; }
+
+async function register(){
+  API = document.getElementById('apiUrl').value;
+  const res = await fetch(API+"/auth/register", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({username: uname(), password: pword()})
+  });
+  if(res.status===409){ setMsg("username already taken — try Log in instead"); return; }
+  if(!res.ok){ setMsg("registration failed (check password is 8+ chars)"); return; }
+  const data = await res.json();
+  onAuthed(data);
+}
+
+async function login(){
+  API = document.getElementById('apiUrl').value;
+  const res = await fetch(API+"/auth/login", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({username: uname(), password: pword()})
+  });
+  if(!res.ok){ setMsg("login failed — check username/password"); return; }
+  const data = await res.json();
+  onAuthed(data);
+}
+
+function onAuthed(data){
+  token = data.token;
+  document.getElementById('whoName').textContent = data.username;
+  document.getElementById('authBox').classList.add('hidden');
+  document.getElementById('appBox').classList.remove('hidden');
+  refreshAll();
+}
+
+function logout(){
+  token = null;
+  document.getElementById('appBox').classList.add('hidden');
+  document.getElementById('authBox').classList.remove('hidden');
+  setMsg('');
+}
+
+function uname(){ return document.getElementById('username').value.trim(); }
+function pword(){ return document.getElementById('password').value; }
+function setMsg(m){ document.getElementById('authMsg').textContent = m; }
+
+async function refreshAll(){
+  const res = await fetch(API+"/problems", { headers: authHeader() });
+  if(!res.ok){ setMsg("session expired, please log in again"); logout(); return; }
+  problemsCache = await res.json();
+  render();
+}
+
+function computeStats(){
+  const now = Date.now();
+  let total = problemsCache.length, solved=0, due=0, overdue=0;
+  problemsCache.forEach(p=>{
+    if(p.status && p.status !== 'NEW'){
+      solved++;
+      if(p.due && new Date(p.due).getTime() <= now) due++;
+      if(p.due && new Date(p.due).getTime() < now - 86400000) overdue++;
+    }
+  });
+  return {total, solved, due, overdue};
+}
+
+function fmtDue(dueStr, now){
+  const ts = new Date(dueStr).getTime();
+  const diffDays = Math.round((ts-now)/86400000);
+  if(diffDays <= 0) return diffDays===0 ? 'due today' : `overdue ${Math.abs(diffDays)}d`;
+  return `due in ${diffDays}d`;
+}
+
+function render(){
+  const now = Date.now();
+  const s = computeStats();
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="n">${s.solved}/${s.total}</div><div class="l">solved</div></div>
+    <div class="stat ${s.due>0?'warn':''}"><div class="n">${s.due}</div><div class="l">due today</div></div>
+    <div class="stat"><div class="n">${s.overdue}</div><div class="l">overdue</div></div>
+    <div class="stat"><div class="n">${s.total-s.solved}</div><div class="l">not started</div></div>
+  `;
+
+  const content = document.getElementById('content');
+  if(activeTab === 'due') renderDue(content, now);
+  else renderAllProblems(content, now);
+}
+
+function renderDue(content, now){
+  const items = problemsCache
+    .filter(p => p.status === 'REVIEW' && p.due && new Date(p.due).getTime() <= now)
+    .sort((a,b)=> new Date(a.due) - new Date(b.due));
+
+  if(items.length === 0){
+    content.innerHTML = `<div class="empty"><span class="big">✓</span>nothing due right now.<br>go solve something new, or check "all problems".</div>`;
+    return;
+  }
+
+  content.innerHTML = items.map(p=>{
+    const dueTs = new Date(p.due).getTime();
+    const overdue = dueTs < now - 86400000;
+    const safeId = 'note_'+p.problemId;
+    return `
+    <div class="queue-item ${overdue?'overdue':'duenow'}">
+      <div class="qi-top">
+        <div>
+          <div class="qi-name">${escapeHtml(p.name)}</div>
+          <div class="qi-cat">${escapeHtml(p.category)}</div>
+        </div>
+        <div class="qi-due ${overdue?'overdue-txt':''}">${fmtDue(p.due, now)}</div>
+      </div>
+      <button class="toggle-note" data-toggle="${safeId}">show pattern hint</button>
+      <div class="qi-note" id="${safeId}">${escapeHtml(p.note || '(no note saved)')}</div>
+      <div class="qi-actions">
+        <button class="rate again" data-rate="1" data-id="${p.problemId}">again</button>
+        <button class="rate hard" data-rate="2" data-id="${p.problemId}">hard</button>
+        <button class="rate good" data-rate="3" data-id="${p.problemId}">good</button>
+        <button class="rate easy" data-rate="4" data-id="${p.problemId}">easy</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  content.querySelectorAll('[data-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const el = document.getElementById(btn.getAttribute('data-toggle'));
+      el.classList.toggle('shown');
+      btn.textContent = el.classList.contains('shown') ? 'hide pattern hint' : 'show pattern hint';
+    });
+  });
+  content.querySelectorAll('button.rate').forEach(btn=>{
+    btn.addEventListener('click', ()=>rate(parseInt(btn.getAttribute('data-id')), parseInt(btn.getAttribute('data-rate'))));
+  });
+}
+
+function renderAllProblems(content, now){
+  const byCat = [];
+  const seen = new Map();
+  problemsCache.forEach(p=>{
+    if(!seen.has(p.category)){ seen.set(p.category, []); byCat.push(p.category); }
+    seen.get(p.category).push(p);
+  });
+
+  let html = '';
+  byCat.forEach(cat=>{
+    const probs = seen.get(cat);
+    const solvedCount = probs.filter(p=>p.status!=='NEW').length;
+    html += `<div class="cat-block"><div class="cat-head"><span>${escapeHtml(cat)}</span><span>${solvedCount}/${probs.length}</span></div>`;
+    probs.forEach(p=>{
+      const badge = p.status==='NEW'
+        ? `<span class="badge">new</span>`
+        : `<span class="badge review">${fmtDue(p.due, now)}</span>`;
+      const action = p.status==='NEW'
+        ? `<button class="btn-small" onclick="openNoteModal(${p.problemId}, '${escapeAttr(p.name)}', '')">mark solved</button>`
+        : `<button class="btn-small" onclick="openNoteModal(${p.problemId}, '${escapeAttr(p.name)}', '${escapeAttr(p.note||'')}')">edit note</button>`;
+      html += `<div class="prob-row"><div class="prob-name">${escapeHtml(p.name)}</div>${badge}${action}</div>`;
+    });
+    html += `</div>`;
+  });
+  content.innerHTML = html;
+}
+
+function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str||''; return d.innerHTML; }
+function escapeAttr(str){ return (str||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;"); }
+
+function openNoteModal(problemId, name, existingNote){
+  pendingProblemId = problemId;
+  document.getElementById('modalTitle').textContent = name;
+  document.getElementById('noteInput').value = existingNote;
+  document.getElementById('noteModal').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('noteModal').classList.remove('open');
+  pendingProblemId = null;
+}
+document.getElementById('noteCancel').addEventListener('click', closeModal);
+document.getElementById('noteSave').addEventListener('click', async ()=>{
+  if(!pendingProblemId) return;
+  const note = document.getElementById('noteInput').value.trim();
+  const existing = problemsCache.find(p=>p.problemId===pendingProblemId);
+  const path = (existing && existing.status !== 'NEW') ? `/reviews/${pendingProblemId}/note` : `/reviews/${pendingProblemId}/solve`;
+  const method = (existing && existing.status !== 'NEW') ? 'PATCH' : 'POST';
+  await fetch(API+path, {
+    method, headers: {...authHeader(), "Content-Type":"application/json"},
+    body: JSON.stringify({note})
+  });
+  closeModal();
+  await refreshAll();
+});
+
+async function rate(problemId, rating){
+  await fetch(API+`/reviews/${problemId}/rate`, {
+    method:"POST", headers: {...authHeader(), "Content-Type":"application/json"},
+    body: JSON.stringify({rating})
+  });
+  await refreshAll();
+}
+
+document.getElementById('tab-due').addEventListener('click', ()=>{ activeTab='due'; setActiveTab(); render(); });
+document.getElementById('tab-all').addEventListener('click', ()=>{ activeTab='all'; setActiveTab(); render(); });
+function setActiveTab(){
+  document.getElementById('tab-due').classList.toggle('active', activeTab==='due');
+  document.getElementById('tab-all').classList.toggle('active', activeTab==='all');
+}
+</script>
+</body>
+</html>
