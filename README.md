@@ -90,39 +90,4 @@ curl -X POST localhost:8080/api/reviews/3/rate \
   -d '{"rating": 3}'
 ```
 
-## Deploying (Railway or Render)
 
-Both support Docker deploys directly from this repo's `Dockerfile`.
-
-**Railway**
-1. `railway init` in this directory, then `railway up`
-2. Add a Postgres plugin from the Railway dashboard — it auto-injects `DATABASE_URL`
-3. Set `JWT_SECRET` as an environment variable in the project settings
-4. Railway auto-detects the `Dockerfile` and deploys
-
-**Render**
-1. New → Web Service → connect this repo
-2. Environment: Docker
-3. Add a Render Postgres instance, then set `DATABASE_URL`, `DATABASE_USERNAME`,
-   `DATABASE_PASSWORD` (or a single `SPRING_DATASOURCE_URL` if you prefer) and
-   `JWT_SECRET` in the service's environment settings
-4. Deploy — Render builds from the `Dockerfile` automatically
-
-Either way, once deployed you get a live URL for the resume instead of just a
-GitHub link.
-
-## Resume framing
-
-Suggested bullet:
-> Built and deployed a full-stack spaced-repetition scheduler implementing the
-> FSRS-4.5 algorithm (Java/Spring Boot, Postgres, JWT auth); unit-tested the
-> scheduling algorithm in isolation and containerized for deployment.
-
-Talking points for interviews:
-- Why FSRS over a fixed-multiplier scheduler (SM-2) — models per-card
-  difficulty and retrievability instead of a flat ease factor
-- Why `FsrsService` has no Spring dependencies — keeps the algorithm testable
-  without a Spring context
-- Schema design: `User` 1—N `ReviewCard`, `Problem` 1—N `ReviewCard`, unique
-  constraint on `(user_id, problem_id)` so each user has exactly one card per
-  problem
