@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NeetCode Tracker</title>
+<style>
+  body{font-family:monospace;background:#0d1117;color:#d7dee5;max-width:800px;margin:30px auto;padding:0 20px;}
+  h1{color:#5fd68a;font-size:18px;}
+  input,button{font-family:monospace;font-size:14px;padding:8px;margin:4px 0;border-radius:5px;border:1px solid #333;background:#161d26;color:#fff;}
+  button{cursor:pointer;background:#1e2733;}
+  button:hover{background:#2c5c42;}
+  .row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  #authBox{background:#12181f;padding:15px;border-radius:8px;margin-bottom:20px;}
+  .prob{background:#12181f;padding:10px 14px;border-radius:6px;margin-bottom:8px;}
+  .cat{color:#7c8a99;font-size:11px;}
+  .name{font-size:14px;}
+  .rate button{margin-right:5px;font-size:11px;padding:5px 10px;}
+  #status{color:#e8b04b;font-size:12px;}
+  #probList{margin-top:20px;}
+</style>
+</head>
+<body>
+<h1>&gt; neetcode-tracker (local UI)</h1>
+
+<div id="authBox">
+  <div class="row">
+    <input id="username" placeholder="username" value="joseph">
+    <input id="password" placeholder="password" type="password" value="testpass123">
+    <button onclick="login()">Log in</button>
+    <button onclick="register()">Register</button>
+  </div>
+  <div id="status">not logged in</div>
+</div>
+
+<div id="probList"></div>
+
+<script>
+const API = "http://localhost:8080/api";
+let token = null;
+
+async function register(){
+  const res = await fetch(API+"/auth/register", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({username: uname(), password: pword()})
+  });
+  if(res.status===409){ document.getElementById('status').innerText = "already registered — try Log in"; return; }
+  const data = await res.json();
+  token = data.token;
+  document.getElementById('status').innerText = "registered + logged in as " + data.username;
+  loadProblems();
+}
+
+async function login(){
+  const res = await fetch(API+"/auth/login", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({username: uname(), password: pword()})
+  });
+  if(!res.ok){ document.getElementById('status').innerText = "login failed"; return; }
+  const data = await res.json();
+  token = data.token;
+  document.getElementById('status').innerText = "logged in as " + data.username;
+  loadProblems();
+}
+
+function uname(){ return document.getElementById('username').value; }
+function pword(){ return document.getElementById('password').value; }
+
+async function loadProblems(){
+  const res = await fetch(API+"/problems", { headers: authHeader() });
+  const problems = await res.json();
+  const list = document.getElementById('probList');
+  list.innerHTML = problems.slice(0,150).map(p => `
+    <div class="prob">
+      <div class="cat">${p.category}</div>
+      <div class="name">${p.name} — <b>${p.status}</b> ${p.due ? " (due " + new Date(p.due).toLocaleDateString() + ")" : ""}</div>
+      ${p.status==='NEW'
+        ? `<button onclick="solve(${p.problemId})">mark solved</button>`
+        : `<div class="rate">
+             <button onclick="rate(${p.problemId},1)">again</button>
+             <button onclick="rate(${p.problemId},2)">hard</button>
+             <button onclick="rate(${p.problemId},3)">good</button>
+             <button onclick="rate(${p.problemId},4)">easy</button>
+           </div>`
+      }
+    </div>
+  `).join('');
+}
+
+async function solve(id){
+  const note = prompt("Pattern note for this problem:", "");
+  await fetch(API+"/reviews/"+id+"/solve", {
+    method:"POST", headers: {...authHeader(), "Content-Type":"application/json"},
+    body: JSON.stringify({note: note||""})
+  });
+  loadProblems();
+}
+
+async function rate(id, rating){
+  await fetch(API+"/reviews/"+id+"/rate", {
+    method:"POST", headers: {...authHeader(), "Content-Type":"application/json"},
+    body: JSON.stringify({rating})
+  });
+  loadProblems();
+}
+
+function authHeader(){
+  return token ? {"Authorization":"Bearer "+token} : {};
+}
+</script>
+</body>
+</html>
