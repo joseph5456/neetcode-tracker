@@ -26,8 +26,8 @@ public class ProblemController {
     private final UserRepository userRepository;
 
     public ProblemController(ProblemRepository problemRepository,
-                              ReviewCardRepository reviewCardRepository,
-                              UserRepository userRepository) {
+                             ReviewCardRepository reviewCardRepository,
+                             UserRepository userRepository) {
         this.problemRepository = problemRepository;
         this.reviewCardRepository = reviewCardRepository;
         this.userRepository = userRepository;
@@ -39,7 +39,7 @@ public class ProblemController {
      */
     @GetMapping
     public List<ProblemResponse> listProblems(@AuthenticationPrincipal UserDetails principal) {
-        List<Problem> problems = problemRepository.findAllByOrderByCategoryAscSortOrderAsc();
+        List<Problem> problems = problemRepository.findAllByOrderBySortOrderAsc();
 
         Map<Long, ReviewCard> cardsByProblemId = new HashMap<>();
         if (principal != null) {
